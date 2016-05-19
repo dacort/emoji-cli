@@ -10,8 +10,8 @@
 #
 
 EMOJI_CLI_DICT="${0:A:h}/dict/emoji.json"
-: "${EMOJI_CLI_FILTER:="fzf-tmux -d 15%:fzf:peco:percol"}"
-: "${EMOJI_CLI_KEYBIND:="^s"}"
+: "${EMOJI_CLI_FILTER:="fzf -d 15%:fzf:peco:percol"}"
+: "${EMOJI_CLI_KEYBIND:="^K"}"
 
 # helper functions
 is_zsh()  { [ -n "$ZSH_VERSION" ];  }
@@ -107,8 +107,8 @@ emoji::emoji_get() {
 
     cat <"$EMOJI_CLI_DICT" \
         | jq -r '.[]|"\(.emoji) \(":" + .aliases[0] + ":")"' \
-        | eval "$_EMOJI_CLI_FILTER" \
-        | awk '{print $2}'
+        | eval "$_EMOJI_CLI_FILTER" 
+        #| awk '{print $2}'
 }
 
 emoji::emoji_get_with_tag() {
@@ -128,8 +128,8 @@ emoji::emoji_get_with_tag() {
         done
     fi | sort -k2,2 \
         | uniq \
-        | eval "$_EMOJI_CLI_FILTER" \
-        | awk '{print $2}'
+        | eval "$_EMOJI_CLI_FILTER" 
+        #| awk '{print $2}'
 }
 
 emoji::cli() {
@@ -142,15 +142,21 @@ emoji::cli() {
         if [[ $_LBUFFER =~ [a-zA-z0-9+_-]$ ]]; then
             local comp
             comp="$(echo $_LBUFFER | grep -E -o ":?[a-zA-z0-9+_-]+")"
-            emoji="$(emoji::emoji_get_with_tag "${(L)comp#:}")"
-            _BUFFER="${LBUFFER%$comp}${emoji:-$comp}"
+            emoji_data="$(emoji::emoji_get_with_tag "${(L)comp#:}")"
+            emoji="$(echo ${emoji_data} | awk '{print $2}')"
+            symbol="$(echo ${emoji_data} | awk '{print $1}')"
+            _BUFFER="${LBUFFER%$comp}${symbol:-$comp} "
         else
-            emoji="$(emoji::emoji_get)"
-            _BUFFER="${LBUFFER}${emoji}"
+            emoji_data="$(emoji::emoji_get)"
+            emoji="$(echo ${emoji_data} | awk '{print $2}')"
+            symbol="$(echo ${emoji_data} | awk '{print $1}')"
+            _BUFFER="${LBUFFER}${symbol} "
         fi
     else
-        emoji="$(emoji::emoji_get)"
-        _BUFFER="${emoji}"
+        emoji_data="$(emoji::emoji_get)"
+        emoji="$(echo ${emoji_data} | awk '{print $2}')"
+        symbol="$(echo ${emoji_data} | awk '{print $1}')"
+        _BUFFER="${LBUFFER}${symbol} "
     fi
 
     if [[ -n "$_RBUFFER" ]]; then
